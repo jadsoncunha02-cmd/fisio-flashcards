@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Question, QuestionOption, QuestionType } from '@/lib/types'
 import { createQuestion, updateQuestion, getDistinctValues } from '@/lib/queries'
+import ImageUpload from './ImageUpload'
 
 type FormData = {
   type: QuestionType
@@ -17,6 +18,7 @@ type FormData = {
   difficulty: number
   tags: string
   notes: string
+  image_urls: string[]
 }
 
 const INITIAL: FormData = {
@@ -28,7 +30,7 @@ const INITIAL: FormData = {
     { letter: 'D', text: '' }, { letter: 'E', text: '' },
   ],
   area: '', subtopic: '', institution: '', year: '',
-  difficulty: 3, tags: '', notes: '',
+  difficulty: 3, tags: '', notes: '', image_urls: [],
 }
 
 export default function QuestionForm({ initial }: { initial?: Question }) {
@@ -43,6 +45,7 @@ export default function QuestionForm({ initial }: { initial?: Question }) {
       institution: initial.institution || '', year: initial.year?.toString() || '',
       difficulty: initial.difficulty, tags: (initial.tags || []).join(', '),
       notes: initial.notes || '',
+      image_urls: initial.image_urls || [],
     }
   })
   const [areas, setAreas] = useState<string[]>([])
@@ -77,6 +80,7 @@ export default function QuestionForm({ initial }: { initial?: Question }) {
         difficulty: form.difficulty,
         tags: form.tags ? form.tags.split(',').map((t) => t.trim()).filter(Boolean) : [],
         notes: form.notes.trim() || null,
+        image_urls: form.image_urls,
       }
       if (initial) {
         await updateQuestion(initial.id, payload)
@@ -119,6 +123,15 @@ export default function QuestionForm({ initial }: { initial?: Question }) {
           value={form.question_text}
           onChange={(e) => set('question_text', e.target.value)}
           placeholder="Digite o enunciado da questão..."
+        />
+      </div>
+
+      {/* Imagens */}
+      <div className="ff-form-group">
+        <label className="ff-label">Imagens da questão</label>
+        <ImageUpload
+          urls={form.image_urls}
+          onChange={(urls) => set('image_urls', urls)}
         />
       </div>
 

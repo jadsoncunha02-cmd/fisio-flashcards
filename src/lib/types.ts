@@ -19,6 +19,7 @@ export interface Question {
   difficulty: number
   tags: string[]
   notes: string | null
+  image_urls: string[]
   created_at: string
 }
 
@@ -27,6 +28,7 @@ export interface Attempt {
   question_id: string
   is_correct: boolean
   answer_given: string | null
+  duration_seconds: number | null
   created_at: string
 }
 

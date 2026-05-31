@@ -10,6 +10,7 @@ import {
 } from '@/lib/queries'
 import { formatDate } from '@/lib/utils'
 import DifficultyStars from '@/components/DifficultyStars'
+import ImageViewer from '@/components/ImageViewer'
 
 export default function QuestaoDetailPage() {
   const params = useParams<{ id: string }>()
@@ -79,6 +80,12 @@ export default function QuestaoDetailPage() {
           {question.question_text}
         </p>
 
+        {question.image_urls?.length > 0 && (
+          <div style={{ marginBottom: '16px' }}>
+            <ImageViewer urls={question.image_urls} />
+          </div>
+        )}
+
         {question.type === 'multiple_choice' && question.options && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '16px' }}>
             {question.options.map((opt) => (
@@ -130,8 +137,11 @@ export default function QuestaoDetailPage() {
                   {a.is_correct ? '✓ Correto' : '✗ Incorreto'}
                   {a.answer_given ? ` — ${a.answer_given}` : ''}
                 </span>
-                <span style={{ color: 'var(--ink-500)', fontFamily: 'var(--font-mono)', fontSize: '11px' }}>
-                  {formatDate(a.created_at)}
+                <span style={{ color: 'var(--ink-500)', fontFamily: 'var(--font-mono)', fontSize: '11px', display: 'flex', gap: '10px' }}>
+                  {a.duration_seconds != null && (
+                    <span title="Tempo gasto">⏱ {Math.floor(a.duration_seconds / 60)}:{(a.duration_seconds % 60).toString().padStart(2,'0')}</span>
+                  )}
+                  <span>{formatDate(a.created_at)}</span>
                 </span>
               </div>
             ))}

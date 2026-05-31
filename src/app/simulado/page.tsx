@@ -1,12 +1,25 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import { QuestionFilters, QuestionWithStatus } from '@/lib/types'
 import { getQuestions, createAttempt, getDistinctValues } from '@/lib/queries'
 import { shuffleArray } from '@/lib/utils'
+import ImageViewer from '@/components/ImageViewer'
 
 type Phase = 'config' | 'running' | 'summary'
+
+interface Result {
+  id: string
+  correct: boolean
+  duration_seconds: number
+}
+
+function formatTime(seconds: number): string {
+  const m = Math.floor(seconds / 60)
+  const s = seconds % 60
+  return `${m}:${s.toString().padStart(2, '0')}`
+}
 
 export default function SimuladoPage() {
   const [phase, setPhase] = useState<Phase>('config')
@@ -19,29 +32,74 @@ export default function SimuladoPage() {
   const [openAnswer, setOpenAnswer] = useState('')
   const [selfEval, setSelfEval] = useState<boolean | null>(null)
   const [confirmed, setConfirmed] = useState(false)
-  const [results, setResults] = useState<{ id: string; correct: boolean }[]>([])
+  const [results, setResults] = useState<Result[]>([])
+
+  // Timer state
+  const [questionSecs, setQuestionSecs] = useState(0)
+  const [totalSecs, setTotalSecs] = useState(0)
+  const questionStartRef = useRef<number>(Date.now())
+  const sessionStartRef = useRef<number>(Date.now())
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
   useEffect(() => { getDistinctValues('area').then(setAreas) }, [])
 
-  const resetAnswer = () => { setSelectedAnswer(''); setOpenAnswer(''); setSelfEval(null); setConfirmed(false) }
+  const startTimers = () => {
+    const now = Date.now()
+    questionStartRef.current = now
+    sessionStartRef.current = now
+    setQuestionSecs(0)
+    setTotalSecs(0)
+    if (timerRef.current) clearInterval(timerRef.current)
+    timerRef.current = setInterval(() => {
+      const elapsed = Math.floor((Date.now() - sessionStartRef.current) / 1000)
+      setTotalSecs(elapsed)
+      setQuestionSecs(Math.floor((Date.now() - questionStartRef.current) / 1000))
+    }, 1000)
+  }
+
+  const resetQuestionTimer = () => {
+    questionStartRef.current = Date.now()
+    setQuestionSecs(0)
+  }
+
+  useEffect(() => () => { if (timerRef.current) clearInterval(timerRef.current) }, [])
+
+  const resetAnswer = () => {
+    setSelectedAnswer('')
+    setOpenAnswer('')
+    setSelfEval(null)
+    setConfirmed(false)
+  }
 
   const handleStart = async () => {
     const all = await getQuestions(filters)
     const shuffled = shuffleArray(all)
     const limit = maxQuestions ? parseInt(maxQuestions) : shuffled.length
     setQuestions(shuffled.slice(0, limit))
-    setCurrentIndex(0); setResults([]); setPhase('running'); resetAnswer()
+    setCurrentIndex(0)
+    setResults([])
+    resetAnswer()
+    setPhase('running')
+    startTimers()
   }
 
   const currentQuestion = questions[currentIndex]
   const correctCount = results.filter((r) => r.correct).length
 
+  const getQuestionDuration = () => Math.floor((Date.now() - questionStartRef.current) / 1000)
+
   const handleConfirm = async () => {
     if (!currentQuestion) return
     if (currentQuestion.type === 'multiple_choice') {
       const isCorrect = selectedAnswer === currentQuestion.correct_answer
-      await createAttempt({ question_id: currentQuestion.id, is_correct: isCorrect, answer_given: selectedAnswer })
-      setResults((prev) => [...prev, { id: currentQuestion.id, correct: isCorrect }])
+      const duration = getQuestionDuration()
+      await createAttempt({
+        question_id: currentQuestion.id,
+        is_correct: isCorrect,
+        answer_given: selectedAnswer,
+        duration_seconds: duration,
+      })
+      setResults((prev) => [...prev, { id: currentQuestion.id, correct: isCorrect, duration_seconds: duration }])
     }
     setConfirmed(true)
   }
@@ -50,11 +108,23 @@ export default function SimuladoPage() {
     if (!currentQuestion) return
     if (currentQuestion.type === 'open') {
       const isCorrect = selfEval === true
-      await createAttempt({ question_id: currentQuestion.id, is_correct: isCorrect, answer_given: openAnswer || null })
-      setResults((prev) => [...prev, { id: currentQuestion.id, correct: isCorrect }])
+      const duration = getQuestionDuration()
+      await createAttempt({
+        question_id: currentQuestion.id,
+        is_correct: isCorrect,
+        answer_given: openAnswer || null,
+        duration_seconds: duration,
+      })
+      setResults((prev) => [...prev, { id: currentQuestion.id, correct: isCorrect, duration_seconds: duration }])
     }
-    if (currentIndex + 1 >= questions.length) setPhase('summary')
-    else { setCurrentIndex(currentIndex + 1); resetAnswer() }
+    if (currentIndex + 1 >= questions.length) {
+      if (timerRef.current) clearInterval(timerRef.current)
+      setPhase('summary')
+    } else {
+      setCurrentIndex(currentIndex + 1)
+      resetAnswer()
+      resetQuestionTimer()
+    }
   }
 
   // ── Config ──
@@ -91,8 +161,7 @@ export default function SimuladoPage() {
         <div className="ff-form-group">
           <label className="ff-label">Número de questões</label>
           <input type="number" min={1} max={200} className="ff-input"
-            value={maxQuestions} onChange={(e) => setMaxQuestions(e.target.value)}
-            placeholder="Todas" />
+            value={maxQuestions} onChange={(e) => setMaxQuestions(e.target.value)} placeholder="Todas" />
         </div>
         <button onClick={handleStart} className="ff-btn ff-btn-primary ff-btn-block ff-btn-lg">
           Iniciar simulado
@@ -105,34 +174,68 @@ export default function SimuladoPage() {
   if (phase === 'summary') {
     const accuracy = results.length > 0 ? Math.round((correctCount / results.length) * 100) : 0
     const pctColor = accuracy >= 70 ? 'var(--success-text)' : accuracy >= 50 ? 'var(--brand-text)' : 'var(--error-text)'
+    const totalTime = totalSecs
+    const avgTime = results.length > 0 ? Math.round(results.reduce((s, r) => s + r.duration_seconds, 0) / results.length) : 0
+    const fastest = results.length > 0 ? Math.min(...results.map((r) => r.duration_seconds)) : 0
+    const slowest = results.length > 0 ? Math.max(...results.map((r) => r.duration_seconds)) : 0
     const wrongIds = results.filter((r) => !r.correct).map((r) => r.id)
     const wrongQuestions = questions.filter((q) => wrongIds.includes(q.id))
+
     return (
-      <div style={{ maxWidth: '480px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+      <div style={{ maxWidth: '560px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
         <h1 className="ff-page-title">Resultado</h1>
+
+        {/* Score */}
         <div className="ff-card" style={{ textAlign: 'center', padding: '32px' }}>
-          <p style={{ fontFamily: 'var(--font-brand)', fontSize: '52px', fontWeight: 700, color: pctColor, lineHeight: 1, margin: '0 0 8px 0' }}>
+          <p style={{ fontFamily: 'var(--font-brand)', fontSize: '56px', fontWeight: 700, color: pctColor, lineHeight: 1, margin: '0 0 8px 0' }}>
             {accuracy}%
           </p>
           <p style={{ color: 'var(--ink-500)', fontSize: '14px', margin: 0 }}>
             {correctCount} acertos de {results.length} questões
           </p>
         </div>
+
+        {/* Time stats */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '12px' }}>
+          {[
+            { label: 'Tempo total', value: formatTime(totalTime) },
+            { label: 'Média/questão', value: formatTime(avgTime) },
+            { label: 'Mais rápida', value: formatTime(fastest) },
+            { label: 'Mais lenta', value: formatTime(slowest) },
+          ].map(({ label, value }) => (
+            <div key={label} className="ff-stat-card" style={{ padding: '14px 12px' }}>
+              <span className="ff-stat-label">{label}</span>
+              <span style={{ fontFamily: 'var(--font-mono)', fontSize: '18px', fontWeight: 700, color: 'var(--ink-900)' }}>{value}</span>
+            </div>
+          ))}
+        </div>
+
         {wrongQuestions.length > 0 && (
           <div className="ff-card">
-            <p className="ff-section-title">Questões erradas</p>
+            <p className="ff-section-title">Questões erradas ({wrongQuestions.length})</p>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              {wrongQuestions.map((q) => (
-                <Link key={q.id} href={`/questoes/${q.id}`}
-                  style={{ fontSize: '12px', color: 'var(--ink-700)', padding: '8px 12px', background: 'var(--bg-elevated)', borderRadius: 'var(--r-md)', textDecoration: 'none', display: 'block' }}
-                  onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--error-soft)')}
-                  onMouseLeave={(e) => (e.currentTarget.style.background = 'var(--bg-elevated)')}>
-                  {q.question_text.slice(0, 90)}...
-                </Link>
-              ))}
+              {wrongQuestions.map((q) => {
+                const r = results.find((x) => x.id === q.id)
+                return (
+                  <Link key={q.id} href={`/questoes/${q.id}`}
+                    style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 12px', background: 'var(--bg-elevated)', borderRadius: 'var(--r-md)', textDecoration: 'none', transition: 'background var(--t-base)' }}
+                    onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--error-soft)')}
+                    onMouseLeave={(e) => (e.currentTarget.style.background = 'var(--bg-elevated)')}>
+                    <span style={{ fontSize: '12px', color: 'var(--ink-700)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '80%' }}>
+                      {q.question_text.slice(0, 90)}...
+                    </span>
+                    {r && (
+                      <span style={{ fontFamily: 'var(--font-mono)', fontSize: '10px', color: 'var(--ink-500)', flexShrink: 0, marginLeft: '12px' }}>
+                        {formatTime(r.duration_seconds)}
+                      </span>
+                    )}
+                  </Link>
+                )
+              })}
             </div>
           </div>
         )}
+
         <div style={{ display: 'flex', gap: '10px' }}>
           <button onClick={() => { setPhase('config'); resetAnswer() }} className="ff-btn ff-btn-primary" style={{ flex: 1 }}>
             Novo simulado
@@ -147,16 +250,28 @@ export default function SimuladoPage() {
 
   // ── Running ──
   if (!currentQuestion) return null
+
   return (
     <div style={{ maxWidth: '680px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
-      {/* Progress */}
-      <div>
-        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', color: 'var(--ink-500)', fontFamily: 'var(--font-mono)', marginBottom: '6px' }}>
-          <span>Questão {currentIndex + 1} de {questions.length}</span>
-          <span>{correctCount} acertos</span>
+      {/* Progress + timers */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '16px' }}>
+        <div style={{ flex: 1 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', color: 'var(--ink-500)', fontFamily: 'var(--font-mono)', marginBottom: '6px' }}>
+            <span>Questão {currentIndex + 1} de {questions.length}</span>
+            <span>{correctCount} acerto{correctCount !== 1 ? 's' : ''}</span>
+          </div>
+          <div className="ff-progress-wrap">
+            <div className="ff-progress-bar" style={{ width: `${((currentIndex + 1) / questions.length) * 100}%` }} />
+          </div>
         </div>
-        <div className="ff-progress-wrap">
-          <div className="ff-progress-bar" style={{ width: `${((currentIndex + 1) / questions.length) * 100}%` }} />
+        <div style={{ display: 'flex', gap: '8px', flexShrink: 0 }}>
+          <div className={`ff-timer${questionSecs >= 120 ? ' warning' : ''}`} title="Tempo nesta questão">
+            <span className="ff-timer-dot" />
+            {formatTime(questionSecs)}
+          </div>
+          <div className="ff-timer" title="Tempo total da sessão" style={{ opacity: 0.7 }}>
+            {formatTime(totalSecs)}
+          </div>
         </div>
       </div>
 
@@ -170,6 +285,10 @@ export default function SimuladoPage() {
         <p style={{ fontSize: '14px', color: 'var(--ink-900)', lineHeight: 1.65, whiteSpace: 'pre-wrap', margin: 0 }}>
           {currentQuestion.question_text}
         </p>
+
+        {currentQuestion.image_urls?.length > 0 && (
+          <ImageViewer urls={currentQuestion.image_urls} />
+        )}
 
         {currentQuestion.type === 'multiple_choice' && currentQuestion.options && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>

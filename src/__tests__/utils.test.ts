@@ -6,6 +6,7 @@ const mockAttempt = (is_correct: boolean): Attempt => ({
   question_id: 'q1',
   is_correct,
   answer_given: 'A',
+  duration_seconds: null,
   created_at: '2026-01-01T10:00:00Z',
 })
 
