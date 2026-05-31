@@ -14,41 +14,36 @@ export default function QuestoesPage() {
 
   useEffect(() => {
     setLoading(true)
-    getQuestions(filters)
-      .then(setQuestions)
-      .finally(() => setLoading(false))
+    getQuestions(filters).then(setQuestions).finally(() => setLoading(false))
   }, [filters])
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-gray-900">Questões</h1>
-        <Link
-          href="/questoes/nova"
-          className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
-        >
-          + Nova questão
-        </Link>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+      <div className="ff-page-header">
+        <h1 className="ff-page-title">Questões</h1>
+        <Link href="/questoes/nova" className="ff-btn ff-btn-primary">+ Nova questão</Link>
       </div>
 
       <FilterBar filters={filters} onChange={setFilters} />
 
       {loading ? (
-        <div className="py-12 text-center text-gray-400">Carregando...</div>
+        <div className="ff-loading">Carregando...</div>
       ) : questions.length === 0 ? (
-        <div className="py-12 text-center text-gray-400">
-          Nenhuma questão encontrada.{' '}
-          <Link href="/questoes/nova" className="text-blue-600 underline">
-            Cadastre a primeira.
-          </Link>
+        <div className="ff-empty">
+          <p className="ff-empty-title">Nenhuma questão encontrada</p>
+          <p className="ff-empty-text">
+            <Link href="/questoes/nova" style={{ color: 'var(--brand-text)', fontWeight: 600 }}>
+              Cadastre a primeira questão
+            </Link>
+          </p>
         </div>
       ) : (
         <>
-          <p className="text-sm text-gray-500">{questions.length} questão(ões) encontrada(s)</p>
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {questions.map((q) => (
-              <QuestionCard key={q.id} question={q} />
-            ))}
+          <p style={{ fontSize: '12px', color: 'var(--ink-500)', fontFamily: 'var(--font-mono)', margin: 0 }}>
+            {questions.length} questão(ões)
+          </p>
+          <div style={{ display: 'grid', gap: '12px', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))' }}>
+            {questions.map((q) => <QuestionCard key={q.id} question={q} />)}
           </div>
         </>
       )}

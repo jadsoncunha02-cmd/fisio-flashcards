@@ -24,40 +24,24 @@ const INITIAL: FormData = {
   question_text: '',
   correct_answer: '',
   options: [
-    { letter: 'A', text: '' },
-    { letter: 'B', text: '' },
-    { letter: 'C', text: '' },
-    { letter: 'D', text: '' },
-    { letter: 'E', text: '' },
+    { letter: 'A', text: '' }, { letter: 'B', text: '' }, { letter: 'C', text: '' },
+    { letter: 'D', text: '' }, { letter: 'E', text: '' },
   ],
-  area: '',
-  subtopic: '',
-  institution: '',
-  year: '',
-  difficulty: 3,
-  tags: '',
-  notes: '',
+  area: '', subtopic: '', institution: '', year: '',
+  difficulty: 3, tags: '', notes: '',
 }
 
-interface Props {
-  initial?: Question
-}
-
-export default function QuestionForm({ initial }: Props) {
+export default function QuestionForm({ initial }: { initial?: Question }) {
   const router = useRouter()
   const [form, setForm] = useState<FormData>(() => {
     if (!initial) return INITIAL
     return {
-      type: initial.type,
-      question_text: initial.question_text,
+      type: initial.type, question_text: initial.question_text,
       correct_answer: initial.correct_answer,
       options: initial.options || INITIAL.options,
-      area: initial.area,
-      subtopic: initial.subtopic || '',
-      institution: initial.institution || '',
-      year: initial.year?.toString() || '',
-      difficulty: initial.difficulty,
-      tags: (initial.tags || []).join(', '),
+      area: initial.area, subtopic: initial.subtopic || '',
+      institution: initial.institution || '', year: initial.year?.toString() || '',
+      difficulty: initial.difficulty, tags: (initial.tags || []).join(', '),
       notes: initial.notes || '',
     }
   })
@@ -65,9 +49,7 @@ export default function QuestionForm({ initial }: Props) {
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
 
-  useEffect(() => {
-    getDistinctValues('area').then(setAreas)
-  }, [])
+  useEffect(() => { getDistinctValues('area').then(setAreas) }, [])
 
   const set = (key: keyof FormData, value: unknown) =>
     setForm((prev) => ({ ...prev, [key]: value }))
@@ -109,29 +91,19 @@ export default function QuestionForm({ initial }: Props) {
     }
   }
 
-  const inputClass =
-    'w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-400 focus:outline-none focus:ring-1 focus:ring-blue-400'
-  const labelClass = 'block text-sm font-medium text-gray-700 mb-1'
-
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
-      {error && (
-        <div className="rounded-md bg-red-50 border border-red-200 p-3 text-sm text-red-700">
-          {error}
-        </div>
-      )}
+    <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+      {error && <div className="ff-error-msg">{error}</div>}
 
-      <div>
-        <label className={labelClass}>Tipo</label>
-        <div className="flex gap-2">
+      {/* Tipo */}
+      <div className="ff-form-group">
+        <label className="ff-label">Tipo</label>
+        <div className="ff-type-toggle">
           {(['multiple_choice', 'open'] as QuestionType[]).map((t) => (
             <button
-              key={t}
-              type="button"
+              key={t} type="button"
               onClick={() => set('type', t)}
-              className={`rounded-md px-4 py-2 text-sm font-medium transition-colors ${
-                form.type === t ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-              }`}
+              className={`ff-type-btn${form.type === t ? ' active' : ''}`}
             >
               {t === 'multiple_choice' ? 'Múltipla Escolha' : 'Dissertativa'}
             </button>
@@ -139,166 +111,112 @@ export default function QuestionForm({ initial }: Props) {
         </div>
       </div>
 
-      <div>
-        <label className={labelClass}>Enunciado *</label>
+      {/* Enunciado */}
+      <div className="ff-form-group">
+        <label className="ff-label">Enunciado *</label>
         <textarea
-          required
-          rows={4}
+          required rows={4} className="ff-textarea"
           value={form.question_text}
           onChange={(e) => set('question_text', e.target.value)}
-          className={inputClass}
           placeholder="Digite o enunciado da questão..."
         />
       </div>
 
+      {/* Alternativas */}
       {form.type === 'multiple_choice' && (
-        <div className="space-y-2">
-          <label className={labelClass}>Alternativas</label>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+          <p className="ff-label">Alternativas</p>
           {form.options.map((opt, i) => (
-            <div key={opt.letter} className="flex gap-2 items-center">
-              <span className="w-6 font-bold text-gray-600">{opt.letter}</span>
-              <input
-                type="text"
-                value={opt.text}
+            <div key={opt.letter} style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+              <span style={{ fontFamily: 'var(--font-mono)', fontSize: '11px', fontWeight: 700, color: 'var(--ink-500)', width: '16px', flexShrink: 0 }}>
+                {opt.letter}
+              </span>
+              <input type="text" className="ff-input" value={opt.text}
                 onChange={(e) => setOption(i, e.target.value)}
-                className={inputClass}
-                placeholder={`Alternativa ${opt.letter}`}
-              />
+                placeholder={`Alternativa ${opt.letter}`} />
             </div>
           ))}
-          <div>
-            <label className={labelClass}>Gabarito *</label>
-            <select
-              required
-              value={form.correct_answer}
-              onChange={(e) => set('correct_answer', e.target.value)}
-              className={inputClass}
-            >
+          <div className="ff-form-group" style={{ marginTop: '4px' }}>
+            <label className="ff-label">Gabarito *</label>
+            <select required className="ff-select" value={form.correct_answer}
+              onChange={(e) => set('correct_answer', e.target.value)}>
               <option value="">Selecione a resposta correta</option>
-              {form.options.map((opt) => (
-                <option key={opt.letter} value={opt.letter}>{opt.letter}</option>
-              ))}
+              {form.options.map((opt) => <option key={opt.letter} value={opt.letter}>{opt.letter}</option>)}
             </select>
           </div>
         </div>
       )}
 
       {form.type === 'open' && (
-        <div>
-          <label className={labelClass}>Resposta esperada *</label>
-          <textarea
-            required
-            rows={3}
+        <div className="ff-form-group">
+          <label className="ff-label">Resposta esperada *</label>
+          <textarea required rows={3} className="ff-textarea"
             value={form.correct_answer}
             onChange={(e) => set('correct_answer', e.target.value)}
-            className={inputClass}
-            placeholder="Descreva a resposta esperada..."
-          />
+            placeholder="Descreva a resposta esperada..." />
         </div>
       )}
 
-      <div className="grid gap-4 sm:grid-cols-2">
-        <div>
-          <label className={labelClass}>Área *</label>
-          <input
-            required
-            list="areas-list"
-            value={form.area}
-            onChange={(e) => set('area', e.target.value)}
-            className={inputClass}
-            placeholder="ex: Ortopedia"
-          />
+      {/* Classificação */}
+      <div className="ff-form-row ff-form-row-2">
+        <div className="ff-form-group">
+          <label className="ff-label">Área *</label>
+          <input required list="areas-list" className="ff-input"
+            value={form.area} onChange={(e) => set('area', e.target.value)}
+            placeholder="ex: Ortopedia" />
           <datalist id="areas-list">
             {areas.map((a) => <option key={a} value={a} />)}
           </datalist>
         </div>
-
-        <div>
-          <label className={labelClass}>Subtópico</label>
-          <input
-            value={form.subtopic}
+        <div className="ff-form-group">
+          <label className="ff-label">Subtópico</label>
+          <input className="ff-input" value={form.subtopic}
             onChange={(e) => set('subtopic', e.target.value)}
-            className={inputClass}
-            placeholder="ex: Joelho"
-          />
+            placeholder="ex: Joelho" />
         </div>
-
-        <div>
-          <label className={labelClass}>Instituição</label>
-          <input
-            value={form.institution}
+        <div className="ff-form-group">
+          <label className="ff-label">Instituição</label>
+          <input className="ff-input" value={form.institution}
             onChange={(e) => set('institution', e.target.value)}
-            className={inputClass}
-            placeholder="ex: UFMG"
-          />
+            placeholder="ex: UFMG" />
         </div>
-
-        <div>
-          <label className={labelClass}>Ano</label>
-          <input
-            type="number"
-            min={2000}
-            max={2030}
-            value={form.year}
-            onChange={(e) => set('year', e.target.value)}
-            className={inputClass}
-            placeholder="ex: 2024"
-          />
+        <div className="ff-form-group">
+          <label className="ff-label">Ano</label>
+          <input type="number" min={2000} max={2030} className="ff-input"
+            value={form.year} onChange={(e) => set('year', e.target.value)}
+            placeholder="ex: 2024" />
         </div>
-
-        <div>
-          <label className={labelClass}>Dificuldade</label>
-          <div className="flex gap-2 mt-1">
-            {[1, 2, 3, 4, 5].map((d) => (
-              <button
-                key={d}
-                type="button"
-                onClick={() => set('difficulty', d)}
-                className={`text-xl transition-colors ${
-                  d <= form.difficulty ? 'text-yellow-400' : 'text-gray-300'
-                } hover:text-yellow-400`}
-              >
-                ★
-              </button>
+        <div className="ff-form-group">
+          <label className="ff-label">Dificuldade</label>
+          <div className="ff-stars">
+            {[1,2,3,4,5].map((d) => (
+              <button key={d} type="button"
+                className={`ff-star${d <= form.difficulty ? ' active' : ''}`}
+                onClick={() => set('difficulty', d)}>★</button>
             ))}
           </div>
         </div>
-
-        <div>
-          <label className={labelClass}>Tags (separadas por vírgula)</label>
-          <input
-            value={form.tags}
+        <div className="ff-form-group">
+          <label className="ff-label">Tags (vírgula)</label>
+          <input className="ff-input" value={form.tags}
             onChange={(e) => set('tags', e.target.value)}
-            className={inputClass}
-            placeholder="ex: ligamento, teste ortopédico"
-          />
+            placeholder="ex: ligamento, ortopédico" />
         </div>
       </div>
 
-      <div>
-        <label className={labelClass}>Anotação geral</label>
-        <textarea
-          rows={3}
-          value={form.notes}
+      {/* Anotação */}
+      <div className="ff-form-group">
+        <label className="ff-label">Anotação geral</label>
+        <textarea rows={3} className="ff-textarea" value={form.notes}
           onChange={(e) => set('notes', e.target.value)}
-          className={inputClass}
-          placeholder="Observações, macetes, links úteis..."
-        />
+          placeholder="Observações, macetes, links úteis..." />
       </div>
 
-      <div className="flex gap-3">
-        <button
-          type="submit"
-          disabled={saving}
-          className="rounded-lg bg-blue-600 px-6 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
-        >
+      <div style={{ display: 'flex', gap: '10px' }}>
+        <button type="submit" disabled={saving} className="ff-btn ff-btn-primary">
           {saving ? 'Salvando...' : initial ? 'Salvar alterações' : 'Cadastrar questão'}
         </button>
-        <button
-          type="button"
-          onClick={() => router.back()}
-          className="rounded-lg bg-gray-100 px-6 py-2 text-sm font-medium text-gray-700 hover:bg-gray-200"
-        >
+        <button type="button" onClick={() => router.back()} className="ff-btn ff-btn-secondary">
           Cancelar
         </button>
       </div>

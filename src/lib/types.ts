@@ -52,6 +52,19 @@ export interface QuestionFilters {
   search?: string
 }
 
+export interface ExternalResult {
+  id: string
+  banca: string | null
+  institution: string | null
+  total_questions: number
+  correct_answers: number
+  difficulty: number | null
+  duration_minutes: number | null
+  exam_date: string
+  notes: string | null
+  created_at: string
+}
+
 export interface DashboardStats {
   totalQuestions: number
   totalAttempts: number

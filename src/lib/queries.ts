@@ -1,5 +1,5 @@
 import { supabase } from './supabase'
-import { Question, Attempt, Comment, QuestionWithStatus, QuestionFilters, DashboardStats } from './types'
+import { Question, Attempt, Comment, QuestionWithStatus, QuestionFilters, DashboardStats, ExternalResult } from './types'
 import { deriveStatus } from './utils'
 
 export async function getQuestions(filters: QuestionFilters = {}): Promise<QuestionWithStatus[]> {
@@ -207,4 +207,32 @@ export async function getDashboardStats(): Promise<DashboardStats> {
     .slice(0, 5)
 
   return { totalQuestions, totalAttempts, globalAccuracy, accuracyByArea, weeklyEvolution, mostMissed }
+}
+
+// ─── External Results ──────────────────────────────────────────────────
+
+export async function getExternalResults(): Promise<ExternalResult[]> {
+  const { data, error } = await supabase
+    .from('external_results')
+    .select('*')
+    .order('exam_date', { ascending: false })
+  if (error) throw error
+  return data || []
+}
+
+export async function createExternalResult(
+  result: Omit<ExternalResult, 'id' | 'created_at'>
+): Promise<ExternalResult> {
+  const { data, error } = await supabase
+    .from('external_results')
+    .insert(result)
+    .select()
+    .single()
+  if (error) throw error
+  return data
+}
+
+export async function deleteExternalResult(id: string): Promise<void> {
+  const { error } = await supabase.from('external_results').delete().eq('id', id)
+  if (error) throw error
 }

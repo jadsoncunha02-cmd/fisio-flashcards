@@ -1,20 +1,12 @@
 import { QuestionStatus } from '@/lib/types'
 
-const CONFIG: Record<QuestionStatus, { label: string; className: string }> = {
-  correct: { label: '✓ Acertei', className: 'bg-green-100 text-green-800' },
-  incorrect: { label: '✗ Errei', className: 'bg-red-100 text-red-800' },
-  unanswered: { label: '— Não respondida', className: 'bg-gray-100 text-gray-600' },
+const CONFIG: Record<QuestionStatus, { label: string; cls: string }> = {
+  correct:   { label: '✓ Acertei',       cls: 'ff-pill ff-status-correct' },
+  incorrect: { label: '✗ Errei',         cls: 'ff-pill ff-status-incorrect' },
+  unanswered:{ label: '— Não respondida', cls: 'ff-pill ff-status-unanswered' },
 }
 
-interface Props {
-  status: QuestionStatus
-}
-
-export default function StatusBadge({ status }: Props) {
-  const { label, className } = CONFIG[status]
-  return (
-    <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${className}`}>
-      {label}
-    </span>
-  )
+export default function StatusBadge({ status }: { status: QuestionStatus }) {
+  const { label, cls } = CONFIG[status]
+  return <span className={cls}>{label}</span>
 }

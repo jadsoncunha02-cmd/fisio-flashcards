@@ -1,9 +1,25 @@
 import type { Metadata } from 'next'
-import { Geist } from 'next/font/google'
+import { DM_Sans, IBM_Plex_Sans, JetBrains_Mono } from 'next/font/google'
 import './globals.css'
 import Navbar from '@/components/Navbar'
 
-const geist = Geist({ subsets: ['latin'] })
+const dmSans = DM_Sans({
+  subsets: ['latin'],
+  variable: '--font-dm-sans',
+  display: 'swap',
+})
+const ibmPlex = IBM_Plex_Sans({
+  weight: ['300', '400', '500', '600', '700'],
+  subsets: ['latin'],
+  variable: '--font-ibm-plex',
+  display: 'swap',
+})
+const jetBrains = JetBrains_Mono({
+  weight: ['400', '500', '600'],
+  subsets: ['latin'],
+  variable: '--font-jetbrains',
+  display: 'swap',
+})
 
 export const metadata: Metadata = {
   title: 'FisioFlash',
@@ -12,10 +28,10 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="pt-BR" className={geist.className}>
-      <body className="bg-gray-50 min-h-screen">
+    <html lang="pt-BR" className={`${dmSans.variable} ${ibmPlex.variable} ${jetBrains.variable}`}>
+      <body>
         <Navbar />
-        <main className="mx-auto max-w-6xl px-4 py-6">{children}</main>
+        <main className="ff-main">{children}</main>
       </body>
     </html>
   )
