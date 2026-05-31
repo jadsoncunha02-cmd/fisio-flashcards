@@ -54,11 +54,11 @@
   --r-2xl:  16px;
   --r-pill: 999px;
 
-  /* Shadow */
-  --shadow-xs: 0 1px 2px rgba(0,0,0,0.06);
-  --shadow-sm: 0 1px 4px rgba(0,0,0,0.07), 0 1px 2px rgba(0,0,0,0.04);
-  --shadow-md: 0 4px 16px rgba(0,0,0,0.08);
-  --shadow-lg: 0 8px 32px rgba(0,0,0,0.10);
+  /* Shadow — subtle, minimalista */
+  --shadow-xs: 0 1px 2px rgba(0,0,0,0.04);
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.05);
+  --shadow-md: 0 4px 12px rgba(0,0,0,0.06);
+  --shadow-lg: 0 8px 24px rgba(0,0,0,0.08);
 
   /* Transition */
   --t-fast: 80ms;
@@ -205,20 +205,17 @@ body {
   border: 1px solid var(--border);
   border-radius: var(--r-xl);
   padding: 20px;
-  box-shadow: var(--shadow-sm);
 }
 
 .ff-card-hover {
   cursor: pointer;
-  transition: all var(--t-base) var(--t-ease);
+  transition: border-color var(--t-base) var(--t-ease);
   text-decoration: none;
   display: block;
   color: inherit;
 }
 .ff-card-hover:hover {
   border-color: var(--brand-border);
-  box-shadow: var(--shadow-md);
-  transform: translateY(-1px);
   text-decoration: none;
 }
 
@@ -227,11 +224,10 @@ body {
   background: var(--bg-surface);
   border: 1px solid var(--border);
   border-radius: var(--r-xl);
-  padding: 20px;
-  box-shadow: var(--shadow-sm);
+  padding: 18px 20px;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 6px;
 }
 .ff-stat-label {
   font-family: var(--font-mono);
@@ -243,10 +239,10 @@ body {
 }
 .ff-stat-value {
   font-family: var(--font-brand);
-  font-size: 26px;
+  font-size: 28px;
   font-weight: 700;
   color: var(--ink-900);
-  line-height: 1.1;
+  line-height: 1;
 }
 .ff-stat-value.brand { color: var(--brand-text); }
 
@@ -256,7 +252,6 @@ body {
   border: 1px solid var(--border);
   border-radius: var(--r-xl);
   padding: 20px;
-  box-shadow: var(--shadow-sm);
 }
 .ff-chart-title {
   font-family: var(--font-mono);
@@ -265,7 +260,7 @@ body {
   text-transform: uppercase;
   letter-spacing: 0.07em;
   color: var(--ink-500);
-  margin-bottom: 16px;
+  margin: 0 0 16px 0;
 }
 
 /* ─── Forms ──────────────────────────────────────────────────────────── */
@@ -304,6 +299,16 @@ body {
   padding: 0 12px;
 }
 
+.ff-select {
+  appearance: none;
+  -webkit-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 14 14'%3E%3Cpath fill='none' stroke='%23696662' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round' d='M3 5l4 4 4-4'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  padding-right: 32px;
+  cursor: pointer;
+}
+
 .ff-textarea {
   padding: 10px 12px;
   resize: vertical;
@@ -322,6 +327,7 @@ body {
 }
 
 .ff-input:disabled { background: var(--bg-elevated); color: var(--ink-500); cursor: not-allowed; }
+.ff-select:disabled { background: var(--bg-elevated); color: var(--ink-500); cursor: not-allowed; opacity: 0.7; }
 
 .ff-select option { background: white; color: var(--ink-900); }
 
@@ -414,17 +420,14 @@ body {
   border: 1px solid var(--border);
   border-radius: var(--r-xl);
   padding: 16px;
-  box-shadow: var(--shadow-xs);
   cursor: pointer;
   text-decoration: none;
   display: block;
   color: inherit;
-  transition: all var(--t-base) var(--t-ease);
+  transition: border-color var(--t-base) var(--t-ease);
 }
 .ff-question-card:hover {
   border-color: var(--brand-border);
-  box-shadow: var(--shadow-md);
-  transform: translateY(-1px);
   text-decoration: none;
 }
 

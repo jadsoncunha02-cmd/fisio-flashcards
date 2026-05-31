@@ -13,7 +13,9 @@ export default function ResultadosPage() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    getExternalResults().then((r) => { setResults(r); setLoading(false) })
+    getExternalResults()
+      .then((r) => { setResults(r); setLoading(false) })
+      .catch(() => { setResults([]); setLoading(false) })
   }, [])
 
   const handleDelete = async (id: string) => {
