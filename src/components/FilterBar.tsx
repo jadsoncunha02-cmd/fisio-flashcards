@@ -3,18 +3,12 @@
 import { useEffect, useState } from 'react'
 import { QuestionFilters, QuestionStatus } from '@/lib/types'
 import { getDistinctValues, getSubtopicsForArea } from '@/lib/queries'
+import CustomSelect from './CustomSelect'
 
 interface Props {
   filters: QuestionFilters
   onChange: (filters: QuestionFilters) => void
 }
-
-const STATUS_OPTIONS: { value: QuestionStatus | ''; label: string }[] = [
-  { value: '', label: 'Todas' },
-  { value: 'correct', label: '✓ Acertei' },
-  { value: 'incorrect', label: '✗ Errei' },
-  { value: 'unanswered', label: '— Não respondidas' },
-]
 
 export default function FilterBar({ filters, onChange }: Props) {
   const [areas, setAreas] = useState<string[]>([])
@@ -39,70 +33,73 @@ export default function FilterBar({ filters, onChange }: Props) {
     onChange(next)
   }
 
+  const areaOptions = [{ value: '', label: 'Todas' }, ...areas.map((a) => ({ value: a, label: a }))]
+  const subtopicOptions = [{ value: '', label: 'Todos' }, ...subtopics.map((s) => ({ value: s, label: s }))]
+  const institutionOptions = [{ value: '', label: 'Todas' }, ...institutions.map((i) => ({ value: i, label: i }))]
+  const diffOptions = [
+    { value: '', label: 'Qualquer' },
+    ...([1,2,3,4,5].map((d) => ({ value: String(d), label: `${d}★+` }))),
+  ]
+  const statusOptions: { value: QuestionStatus | ''; label: string }[] = [
+    { value: '', label: 'Todas' },
+    { value: 'correct', label: '✓ Acertei' },
+    { value: 'incorrect', label: '✗ Errei' },
+    { value: 'unanswered', label: '— Não respondidas' },
+  ]
+
   return (
     <div className="ff-filter-bar">
       <div className="ff-filter-grid">
         <div className="ff-form-group">
           <label className="ff-label">Busca</label>
-          <input
-            type="text"
-            className="ff-input"
-            placeholder="Buscar no enunciado..."
-            value={filters.search || ''}
-            onChange={(e) => set('search', e.target.value)}
-          />
+          <input type="text" className="ff-input" placeholder="Buscar no enunciado..."
+            value={filters.search || ''} onChange={(e) => set('search', e.target.value)} />
         </div>
 
         <div className="ff-form-group">
           <label className="ff-label">Área</label>
-          <select className="ff-select" value={filters.area || ''} onChange={(e) => set('area', e.target.value)}>
-            <option value="">Todas</option>
-            {areas.map((a) => <option key={a} value={a}>{a}</option>)}
-          </select>
+          <CustomSelect
+            value={filters.area || ''}
+            options={areaOptions}
+            onChange={(v) => set('area', v)}
+          />
         </div>
 
         <div className="ff-form-group">
           <label className="ff-label">Subtópico</label>
-          <select
-            className="ff-select"
+          <CustomSelect
             value={filters.subtopic || ''}
-            onChange={(e) => set('subtopic', e.target.value)}
+            options={subtopicOptions}
+            onChange={(v) => set('subtopic', v)}
             disabled={!filters.area}
-          >
-            <option value="">Todos</option>
-            {subtopics.map((s) => <option key={s} value={s}>{s}</option>)}
-          </select>
+          />
         </div>
 
         <div className="ff-form-group">
           <label className="ff-label">Instituição</label>
-          <select className="ff-select" value={filters.institution || ''} onChange={(e) => set('institution', e.target.value)}>
-            <option value="">Todas</option>
-            {institutions.map((i) => <option key={i} value={i}>{i}</option>)}
-          </select>
+          <CustomSelect
+            value={filters.institution || ''}
+            options={institutionOptions}
+            onChange={(v) => set('institution', v)}
+          />
         </div>
 
         <div className="ff-form-group">
           <label className="ff-label">Dificuldade mín.</label>
-          <select
-            className="ff-select"
-            value={filters.difficulty || ''}
-            onChange={(e) => set('difficulty', e.target.value ? Number(e.target.value) : undefined)}
-          >
-            <option value="">Qualquer</option>
-            {[1,2,3,4,5].map((d) => <option key={d} value={d}>{d}★+</option>)}
-          </select>
+          <CustomSelect
+            value={filters.difficulty ? String(filters.difficulty) : ''}
+            options={diffOptions}
+            onChange={(v) => set('difficulty', v ? Number(v) : undefined)}
+          />
         </div>
 
         <div className="ff-form-group">
           <label className="ff-label">Status</label>
-          <select
-            className="ff-select"
+          <CustomSelect
             value={filters.status || ''}
-            onChange={(e) => set('status', e.target.value as QuestionStatus | '')}
-          >
-            {STATUS_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
-          </select>
+            options={statusOptions as { value: string; label: string }[]}
+            onChange={(v) => set('status', v as QuestionStatus | '')}
+          />
         </div>
       </div>
     </div>
